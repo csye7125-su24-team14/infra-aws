@@ -15,7 +15,7 @@ provider "aws" {
 
 # Create a VPC
 module "vpc" {
-    source = "./modules/vpc"
-    cidr_block = ""
-    vpc_tag_name = ""
+  source       = "./modules/vpc"
+  cidr_block   = ""
+  vpc_tag_name = ""
 }
