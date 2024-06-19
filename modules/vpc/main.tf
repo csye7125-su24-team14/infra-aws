@@ -77,39 +77,3 @@ resource "aws_route_table_association" "private_subnet_association" {
   route_table_id = aws_route_table.private_rt.id
 }
 
-resource "aws_security_group" "eks_sg" {
-  name_prefix = "eks_cluster_sg"
-  vpc_id      = aws_vpc.eks_vpc.id
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "eks-sg-${timestamp()}"
-  }
-}
