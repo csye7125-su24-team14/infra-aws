@@ -19,6 +19,15 @@ pipeline {
                 }
             }
         }
+
+        stage('Terraform Init') {
+            steps {
+                script {
+                    // Initialize Terraform
+                    sh 'terraform init'
+                }
+            }
+        }
  
         stage('Terraform fmt') {
             steps {
