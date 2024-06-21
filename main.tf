@@ -115,21 +115,7 @@ module "eks" {
     }
   }
   access_entries = {
-    # One access entry with a policy associated
-    # ex-single = {
-    #   kubernetes_groups = []
-    #   principal_arn     = "arn:aws:iam::${var.aws_account_id}:user/skaluva"
-    #   policy_associations = {
-    #     single = {
-    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
-    #       access_scope = {
-    #         namespaces = ["default"]
-    #         type       = "namespace"
-    #       }
-    #     }
-    #   }
-    # }
-    ex-multiple = {
+    ex-single = {
       kubernetes_groups = []
       principal_arn     = "arn:aws:iam::${var.aws_account_id}:user/skaluva"
 
