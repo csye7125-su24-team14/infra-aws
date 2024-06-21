@@ -11,7 +11,7 @@ resource "aws_kms_key" "eks_node_kms" {
         "Sid" : "Default",
         "Effect" : "Allow",
         "Principal" : {
-          "AWS" : "arn:aws:iam::533267416279:root"
+          "AWS" : "arn:aws:iam::${var.aws_account_id}:root"
         },
         "Action" : "kms:*",
         "Resource" : "*"
