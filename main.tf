@@ -82,11 +82,11 @@ module "eks" {
       #   use_name_prefix = true
       subnet_ids = module.vpc.public_subnet_ids
 
-      min_size       = 1
-      max_size       = 1
-      desired_size   = 1
+      min_size       = 3
+      max_size       = 6
+      desired_size   = 3
       capacity_type  = "ON_DEMAND"
-      instance_types = ["t3.medium"]
+      instance_types = ["c3.large"] #c3.large
       update_config = {
         max_unavailable = 1
       }
@@ -112,6 +112,35 @@ module "eks" {
       iam_role_use_name_prefix     = false
       iam_role_description         = "EKS managed node group role"
       iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" }
+    }
+  }
+  access_entries = {
+    # One access entry with a policy associated
+    # ex-single = {
+    #   kubernetes_groups = []
+    #   principal_arn     = "arn:aws:iam::${var.aws_account_id}:user/skaluva"
+    #   policy_associations = {
+    #     single = {
+    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+    #       access_scope = {
+    #         namespaces = ["default"]
+    #         type       = "namespace"
+    #       }
+    #     }
+    #   }
+    # }
+    ex-multiple = {
+      kubernetes_groups = []
+      principal_arn     = "arn:aws:iam::${var.aws_account_id}:user/skaluva"
+
+      policy_associations = {
+        ex-two = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
     }
   }
 }

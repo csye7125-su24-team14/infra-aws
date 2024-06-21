@@ -47,12 +47,6 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-resource "aws_route_table" "private_rt" {
-  vpc_id = aws_vpc.eks_vpc.id
-  tags = {
-    Name = "eks-private_route_table-${aws_vpc.eks_vpc.id}"
-  }
-}
 
 
 
@@ -71,9 +65,52 @@ resource "aws_route_table_association" "public_subnet_association" {
   route_table_id = aws_route_table.public_rt.id
 }
 
+
+
+
+# resource "aws_route_table" "private_rt" {
+#   vpc_id = aws_vpc.eks_vpc.id
+#   tags = {
+#     Name = "eks-private_route_table-${aws_vpc.eks_vpc.id}"
+#   }
+# }
+
+# resource "aws_route_table_association" "private_subnet_association" {
+#   count          = length(local.private_subnet_ids)
+#   subnet_id      = local.private_subnet_ids[count.index]
+#   route_table_id = aws_route_table.private_rt.id
+# }
+
+resource "aws_nat_gateway" "eks_nat" {
+  count         = local.no_of_subnets
+  allocation_id = element(aws_eip.eks_nat_eip.*.id, count.index)
+  subnet_id     = element(aws_subnet.public_subnet.*.id, count.index)
+  tags = {
+    Name = "eks_nat_gateway-${count.index + 1}"
+  }
+}
+
+resource "aws_eip" "eks_nat_eip" {
+  count = local.no_of_subnets
+  tags = {
+    Name = "eks_nat_eip-${count.index + 1}"
+  }
+}
+
+resource "aws_route_table" "private_rt" {
+  count  = local.no_of_subnets
+  vpc_id = aws_vpc.eks_vpc.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = element(aws_nat_gateway.eks_nat.*.id, count.index)
+  }
+  tags = {
+    Name = "eks-private_route_table-${aws_vpc.eks_vpc.id}-${count.index + 1}"
+  }
+}
+
 resource "aws_route_table_association" "private_subnet_association" {
   count          = length(local.private_subnet_ids)
   subnet_id      = local.private_subnet_ids[count.index]
-  route_table_id = aws_route_table.private_rt.id
+  route_table_id = element(aws_route_table.private_rt.*.id, count.index)
 }
-
