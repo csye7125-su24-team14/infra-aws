@@ -45,7 +45,7 @@ provider "kubernetes" {
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token","--profile",var.aws_profile, "--cluster-name", module.eks.cluster_name]
+    args        = ["eks", "get-token", "--profile", var.aws_profile, "--cluster-name", module.eks.cluster_name]
   }
 }
 
@@ -57,7 +57,7 @@ provider "helm" {
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      args        = ["eks", "get-token","--profile",var.aws_profile, "--cluster-name", module.eks.cluster_name]
+      args        = ["eks", "get-token", "--profile", var.aws_profile, "--cluster-name", module.eks.cluster_name]
     }
   }
 }
@@ -69,9 +69,9 @@ module "vpc" {
 }
 
 module "kms" {
-  source         = "./modules/kms"
-  aws_account_id = "${data.aws_caller_identity.current.account_id}"
-  aws_first_user = var.aws_first_user
+  source          = "./modules/kms"
+  aws_account_id  = data.aws_caller_identity.current.account_id
+  aws_first_user  = var.aws_first_user
   aws_second_user = var.aws_second_user
 }
 
