@@ -12,6 +12,14 @@ terraform {
       source  = "hashicorp/tls"
       version = "4.0.5"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "2.31.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "2.14.0"
+    }
   }
 }
 
@@ -24,7 +32,35 @@ provider "aws" {
   profile = var.aws_profile
 }
 
+data "aws_caller_identity" "current" {}
 
+output "account_id" {
+  value = data.aws_caller_identity.current.account_id
+}
+
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token","--profile",var.aws_profile, "--cluster-name", module.eks.cluster_name]
+  }
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token","--profile",var.aws_profile, "--cluster-name", module.eks.cluster_name]
+    }
+  }
+}
 
 module "vpc" {
   source       = "./modules/vpc"
@@ -34,7 +70,9 @@ module "vpc" {
 
 module "kms" {
   source         = "./modules/kms"
-  aws_account_id = var.aws_account_id
+  aws_account_id = "${data.aws_caller_identity.current.account_id}"
+  aws_first_user = var.aws_first_user
+  aws_second_user = var.aws_second_user
 }
 
 module "eks" {
@@ -117,7 +155,7 @@ module "eks" {
   access_entries = {
     ex-single = {
       kubernetes_groups = []
-      principal_arn     = "arn:aws:iam::${var.aws_account_id}:user/skaluva"
+      principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${var.aws_second_user}"
 
       policy_associations = {
         ex-two = {
@@ -131,41 +169,17 @@ module "eks" {
   }
 }
 
-# module "eks_eks-managed-node-group" {
-#   source                       = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
-#   version                      = "20.14.0"
-#   create                       = true
-#   cluster_name                 = module.eks.cluster_name
-#   name                         = "csye_node"
-#   ami_type                     = "AL2_x86_64"
-#   instance_types               = ["c3.large"]
-#   iam_role_use_name_prefix     = false
-#   iam_role_name                = "AmazonEKSNodeRole"
-#   min_size                     = 1
-#   max_size                     = 1
-#   desired_size                 = 1
-#   create_launch_template       = false
-#   use_custom_launch_template   = false
-#   iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" }
-#   block_device_mappings = {
-#         xvda = {
-#           device_name = "/dev/xvda"
-#           ebs = {
-#             volume_size           = 8
-#             volume_type           = "gp2"
-#             encrypted             = true
-#             # kms_key_id            = module.ebs_kms_key.key_arn
-#             delete_on_termination = true
-#           }
-#         }
-#       }
-#   update_config = {
-#     "max_unavailable" : 1
-#   }
-#   subnet_ids           = module.vpc.public_subnet_ids
-#   cluster_service_cidr = module.eks.cluster_service_cidr
-#   # capacity_type = "ON_DEMAND" default
-#   # disk_size = 20 default 
-#   # create_iam_role = true defaults
-#   # iam_role_description = ""
-# }
+output "cluster_name" {
+  value = module.eks.cluster_name
+}
+
+output "cluster_endpoint" {
+  value = module.eks.cluster_endpoint
+}
+
+resource "null_resource" "wait_for_cluster_ready" {
+  depends_on = [module.eks]
+  provisioner "local-exec" {
+    command = "aws eks --profile ${var.aws_profile} --region ${var.aws_region} update-kubeconfig --name ${module.eks.cluster_name} && kubectl wait --for=condition=Ready node --all --timeout=300s"
+  }
+}

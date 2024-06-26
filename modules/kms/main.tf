@@ -21,8 +21,8 @@ resource "aws_kms_key" "eks_node_kms" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : [
-            "arn:aws:iam::${var.aws_account_id}:user/skaluva",
-            "arn:aws:iam::${var.aws_account_id}:user/anurag_dev"
+            "arn:aws:iam::${var.aws_account_id}:user/${var.aws_first_user}",
+            # "arn:aws:iam::${var.aws_account_id}:user/${var.aws_second_user}"
           ]
         },
         "Action" : [
