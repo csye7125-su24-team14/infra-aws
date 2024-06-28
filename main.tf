@@ -155,7 +155,7 @@ module "eks" {
   access_entries = {
     ex-single = {
       kubernetes_groups = []
-      principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${var.aws_second_user}"
+      principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${var.aws_first_user}"
 
       policy_associations = {
         ex-two = {
