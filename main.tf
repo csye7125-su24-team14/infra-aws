@@ -155,7 +155,7 @@ module "eks" {
   access_entries = {
     ex-single = {
       kubernetes_groups = []
-      principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${var.aws_first_user}"
+      principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${var.aws_second_user}"
 
       policy_associations = {
         ex-two = {
@@ -182,4 +182,69 @@ resource "null_resource" "wait_for_cluster_ready" {
   provisioner "local-exec" {
     command = "aws eks --profile ${var.aws_profile} --region ${var.aws_region} update-kubeconfig --name ${module.eks.cluster_name} && kubectl wait --for=condition=Ready node --all --timeout=300s"
   }
+}
+
+# Create the IAM role for the Cluster Autoscaler
+resource "aws_iam_role" "cluster_autoscaler" {
+  name = "eks-cluster-autoscaler"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${replace(data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer, "https://", "")}"
+        }
+        Condition = {
+          StringEquals = {
+            "${replace(data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer, "https://", "")}:sub" : "system:serviceaccount:${kubernetes_namespace.autoscaler.metadata[0].name}:cluster-autoscaler"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Create the IAM policy for the Cluster Autoscaler
+resource "aws_iam_policy" "cluster_autoscaler" {
+  name        = "eks-cluster-autoscaler-policy"
+  path        = "/"
+  description = "Policy for Cluster Autoscaler"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances",
+          "autoscaling:DescribeLaunchConfigurations",
+          "autoscaling:DescribeTags",
+          "autoscaling:SetDesiredCapacity",
+          "autoscaling:TerminateInstanceInAutoScalingGroup",
+          "ec2:DescribeLaunchTemplateVersions"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach the policy to the role
+resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
+  policy_arn = aws_iam_policy.cluster_autoscaler.arn
+  role       = aws_iam_role.cluster_autoscaler.name
+}
+
+# Data source to get the EKS cluster details
+data "aws_eks_cluster" "cluster" {
+  name = var.cluster_name
+}
+
+# Output the role ARN
+output "cluster_autoscaler_role_arn" {
+  value = aws_iam_role.cluster_autoscaler.arn
 }

@@ -17,11 +17,6 @@ variable "vpc_tag_name" {
   type        = string
 }
 
-variable "aws_account_id" {
-  description = "Account Id"
-  type        = string
-}
-
 # EKS Cluster Variables
 
 variable "cluster_name" {
@@ -69,5 +64,21 @@ variable "kafka_username" {
 
 variable "kafka_password" {
   description = "Kafka password"
+  type        = string
+}
+
+# Helm Autoscaler Values 
+variable "github_token" {
+  description = "Github token"
+  type        = string
+}
+
+variable "github_orgname" {
+  description = "Github orgname"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "Github repo"
   type        = string
 }

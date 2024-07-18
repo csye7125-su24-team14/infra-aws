@@ -50,3 +50,48 @@ resource "helm_release" "postgres" {
     value = "small"
   }
 }
+
+data "http" "latest_release" {
+  url = "https://api.github.com/repos/${var.github_orgname}/${var.github_repo}/releases/latest"
+
+  request_headers = {
+    Accept        = "application/vnd.github.v3+json"
+    Authorization = "token ${var.github_token}"
+  }
+}
+
+locals {
+  latest_release = jsondecode(data.http.latest_release.response_body)
+  latest_version = trimprefix(local.latest_release.tag_name, "v")
+}
+
+resource "helm_release" "autoscaler" {
+  depends_on = [kubernetes_namespace.autoscaler]
+  name       = "cluster-autoscaler"
+  chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/${var.github_repo}/archive/refs/tags/v${local.latest_version}.tar.gz"
+  namespace  = kubernetes_namespace.autoscaler.metadata[0].name
+
+  set {
+    name  = "autoDiscovery.clusterName"
+    value = var.cluster_name
+  }
+  set {
+    name  = "autoDiscovery.enabled"
+    value = "true"
+  }
+  set {
+    name  = "cloudProvider"
+    value = "aws"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.cluster_autoscaler.arn
+  }
+
+  set {
+    name  = "rbac.serviceAccount.name"
+    value = "cluster-autoscaler"
+  }
+
+}
