@@ -78,7 +78,12 @@ variable "github_orgname" {
   type        = string
 }
 
-variable "github_repo" {
+variable "github_autoscaler_repo" {
+  description = "Github repo"
+  type        = string
+}
+
+variable "github_postgres_repo" {
   description = "Github repo"
   type        = string
 }
