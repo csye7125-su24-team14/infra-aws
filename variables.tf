@@ -87,3 +87,8 @@ variable "github_postgres_repo" {
   description = "Github repo"
   type        = string
 }
+
+variable "dockerconfigjson" {
+  description = "Docker config"
+  type        = string
+}
