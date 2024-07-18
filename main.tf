@@ -145,11 +145,12 @@ module "eks" {
         }
       }
 
-      create_iam_role              = true # default
-      iam_role_name                = "AmazonEksNodeRole"
-      iam_role_use_name_prefix     = false
-      iam_role_description         = "EKS managed node group role"
-      iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" }
+      create_iam_role          = true # default
+      iam_role_name            = "AmazonEksNodeRole"
+      iam_role_use_name_prefix = false
+      iam_role_description     = "EKS managed node group role"
+      iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy",
+      "AutoScalingFullAccess" = "arn:aws:iam::aws:policy/AutoScalingFullAccess" }
     }
   }
   access_entries = {
@@ -167,6 +168,7 @@ module "eks" {
       }
     }
   }
+  depends_on = [module.vpc]
 }
 
 output "cluster_name" {
