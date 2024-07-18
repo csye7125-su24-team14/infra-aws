@@ -26,3 +26,10 @@ resource "kubernetes_namespace" "kafka" {
     name = "kafka"
   }
 }
+
+resource "kubernetes_namespace" "autoscaler" {
+  depends_on = [null_resource.wait_for_cluster_ready]
+  metadata {
+    name = "autoscaler"
+  }
+}

@@ -71,3 +71,13 @@ variable "kafka_password" {
   description = "Kafka password"
   type        = string
 }
+
+variable "github_username" {
+  description = "Github username"
+  type        = string
+}
+
+variable "github_password" {
+  description = "Github password"
+  type        = string
+}
