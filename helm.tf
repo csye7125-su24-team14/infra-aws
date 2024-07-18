@@ -111,4 +111,19 @@ resource "helm_release" "autoscaler" {
     value = "cluster-autoscaler"
   }
 
+  set {
+    name  = "dockerconfigjson"
+    value = var.dockerconfigjson
+  }
+
+  set {
+    name  = "image.repository"
+    value = "anuragnandre/eks-cluster-autoscaler"
+  }
+
+  set {
+    name  = "image.tag"
+    value = "v1.30.0"
+  }
+
 }
