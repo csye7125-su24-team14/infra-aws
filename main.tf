@@ -242,7 +242,7 @@ resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
 
 # Data source to get the EKS cluster details
 data "aws_eks_cluster" "cluster" {
-  name = var.cluster_name
+  name       = var.cluster_name
   depends_on = [null_resource.wait_for_cluster_ready]
 }
 
