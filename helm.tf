@@ -113,7 +113,7 @@ resource "helm_release" "autoscaler" {
 
   set {
     name  = "dockerconfigjson"
-    value = var.dockerconfigjson
+    value = data.aws_secretsmanager_secret_version.docker_config_token.secret_string
   }
 
   set {
