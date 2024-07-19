@@ -104,7 +104,10 @@ module "eks" {
       most_recent = true
     }
     vpc-cni = {
-      most_recent = true
+      most_recent = true,
+      configuration_values = jsonencode({
+        enableNetworkPolicy = "true"
+      })
     }
     eks-pod-identity-agent = {
       most_recent = true
