@@ -83,6 +83,11 @@ variable "github_autoscaler_repo" {
   type        = string
 }
 
+variable "github_operator_repo" {
+  description = "Github repo"
+  type        = string
+}
+
 variable "github_postgres_repo" {
   description = "Github repo"
   type        = string
