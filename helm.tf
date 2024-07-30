@@ -49,6 +49,13 @@ resource "helm_release" "postgres" {
     name  = "primary.networkPolicy.enabled"
     value = "false"
   }
+
+  set {
+    name  = "metrics.enabled"
+    value = "true"
+  }
+
+
 }
 data "http" "latest_autoscaler_release" {
   url = "https://api.github.com/repos/${var.github_orgname}/${var.github_autoscaler_repo}/releases/latest"
@@ -71,13 +78,42 @@ data "http" "latest_cve_operator_release" {
     Authorization = "token ${var.github_token}"
   }
 }
+
+data "http" "latest_helm_fluent_bit_release" {
+  url = "https://api.github.com/repos/${var.github_orgname}/helm-fluent-bit/releases/latest"
+  request_headers = {
+    Accept        = "application/vnd.github.v3+json"
+    Authorization = "token ${var.github_token}"
+  }
+}
+
+data "http" "latest_helm_istiod_release" {
+  url = "https://api.github.com/repos/${var.github_orgname}/helm-istio-istiod/releases/latest"
+  request_headers = {
+    Accept        = "application/vnd.github.v3+json"
+    Authorization = "token ${var.github_token}"
+  }
+}
+data "http" "latest_helm_istio_base_release" {
+  url = "https://api.github.com/repos/${var.github_orgname}/helm-istio-base/releases/latest"
+  request_headers = {
+    Accept        = "application/vnd.github.v3+json"
+    Authorization = "token ${var.github_token}"
+  }
+}
 locals {
-  latest_autoscaler_release   = jsondecode(data.http.latest_autoscaler_release.response_body)
-  latest_autoscaler_version   = trimprefix(local.latest_autoscaler_release.tag_name, "v")
-  latest_postgres_release     = jsondecode(data.http.latest_postgres_release.response_body)
-  latest_postgres_version     = trimprefix(local.latest_postgres_release.tag_name, "v")
-  latest_cve_operator_release = jsondecode(data.http.latest_cve_operator_release.response_body)
-  latest_cve_operator_version = trimprefix(local.latest_cve_operator_release.tag_name, "v")
+  latest_autoscaler_release      = jsondecode(data.http.latest_autoscaler_release.response_body)
+  latest_autoscaler_version      = trimprefix(local.latest_autoscaler_release.tag_name, "v")
+  latest_postgres_release        = jsondecode(data.http.latest_postgres_release.response_body)
+  latest_postgres_version        = trimprefix(local.latest_postgres_release.tag_name, "v")
+  latest_cve_operator_release    = jsondecode(data.http.latest_cve_operator_release.response_body)
+  latest_cve_operator_version    = trimprefix(local.latest_cve_operator_release.tag_name, "v")
+  latest_helm_fluent_bit_release = jsondecode(data.http.latest_helm_fluent_bit_release.response_body)
+  latest_helm_fluent_bit_version = trimprefix(local.latest_helm_fluent_bit_release.tag_name, "v")
+  latest_helm_istiod_release     = jsondecode(data.http.latest_helm_fluent_bit_release.response_body)
+  latest_helm_istiod_version     = trimprefix(local.latest_helm_istiod_release.tag_name, "v")
+  latest_helm_istio_base_release = jsondecode(data.http.latest_helm_fluent_bit_release.response_body)
+  latest_helm_istio_base_version = trimprefix(local.latest_helm_istio_base_release.tag_name, "v")
 }
 
 resource "helm_release" "autoscaler" {
@@ -123,5 +159,38 @@ resource "helm_release" "cve-operator" {
   name       = "cve-operator"
   chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-cve-operator/archive/refs/tags/v${local.latest_cve_operator_version}.tar.gz"
   namespace  = kubernetes_namespace.webapp_producer.metadata[0].name
+
+}
+
+resource "helm_release" "fluent-bit" {
+  depends_on = [kubernetes_namespace.amazon-cloudwatch]
+  name       = "fluent-bit"
+  chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-fluent-bit/archive/refs/tags/v${local.latest_helm_fluent_bit_version}.tar.gz"
+  namespace  = kubernetes_namespace.amazon-cloudwatch.metadata[0].name
+
+}
+
+
+resource "helm_release" "istiod" {
+  depends_on = [kubernetes_namespace.istio-system]
+  name       = "istiod"
+  chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-istio-istiod/archive/refs/tags/v${local.latest_helm_istiod_version}.tar.gz"
+  namespace  = kubernetes_namespace.istio-system.metadata[0].name
+
+}
+resource "helm_release" "istio-base" {
+  depends_on = [kubernetes_namespace.istio-system]
+  name       = "istio-base"
+  chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-istio-base/archive/refs/tags/v${local.latest_helm_istio_base_version}.tar.gz"
+  namespace  = kubernetes_namespace.istio-system.metadata[0].name
+
+}
+
+resource "helm_release" "istio-ingress" {
+  depends_on = [kubernetes_namespace.istio-ingress]
+  name       = "istio-ingress"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "gateway"
+  namespace  = kubernetes_namespace.istio-ingress.metadata[0].name
 
 }

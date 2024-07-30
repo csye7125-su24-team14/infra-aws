@@ -131,6 +131,7 @@ module "eks" {
       update_config = {
         max_unavailable = 1
       }
+      vpc_security_group_ids        = [aws_security_group.eks_node_group_allow_istio_sg.id]
       ebs_optimized                 = true
       disable_api_termination       = false
       enable_monitoring             = false # changed
@@ -148,11 +149,14 @@ module "eks" {
         }
       }
 
-      create_iam_role              = true # default
-      iam_role_name                = "AmazonEksNodeRole"
-      iam_role_use_name_prefix     = false
-      iam_role_description         = "EKS managed node group role"
-      iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" }
+      create_iam_role          = true # default
+      iam_role_name            = "AmazonEksNodeRole"
+      iam_role_use_name_prefix = false
+      iam_role_description     = "EKS managed node group role"
+      iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy",
+        "CloudWatchLogsReadOnlyAccess" = "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess",
+        "CloudWatchLogsCreateAcccess"  = aws_iam_policy.CloudWatchLogsCreateAcccess.arn
+      }
     }
   }
   access_entries = {
@@ -171,6 +175,41 @@ module "eks" {
     }
   }
   depends_on = [module.vpc]
+}
+
+resource "aws_security_group" "eks_node_group_allow_istio_sg" {
+  name_prefix = "eks_node_group_allow_istio_sg" # Set the name prefix for the security group
+  vpc_id      = module.vpc.vpc_id               # Set the VPC ID for the security group
+  ingress {
+    from_port   = 15017
+    to_port     = 15017
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+    Name = "eks_node_group_allow_istio_sg"
+  }
+}
+resource "aws_iam_policy" "CloudWatchLogsCreateAcccess" {
+  name        = "CloudWatchLogsCreateAcccess"
+  description = "Create Access of CloudWatch Logs"
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "CloudWatchCreateLogGroupAccess",
+        "Effect" : "Allow",
+        "Action" : [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:PutDestination"
+        ],
+        "Resource" : "*"
+      }
+    ]
+  })
 }
 
 output "cluster_name" {
