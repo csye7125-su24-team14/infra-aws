@@ -157,7 +157,8 @@ module "eks" {
         "CloudWatchLogsReadOnlyAccess" = "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess",
         "CloudWatchLogsCreateAcccess"  = aws_iam_policy.CloudWatchLogsCreateAcccess.arn,
         "AmazonEKSClusterPolicy"       = aws_iam_policy.ExternalDNSPolicy.arn,
-        "EksExternalDnsPolicy"         = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+        "EksExternalDnsPolicy"         = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+        "AmazonRoute53FullAccess"      = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
       }
     }
   }

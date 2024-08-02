@@ -245,3 +245,11 @@ resource "helm_release" "external-dns" {
     value = "Z03371893NFK1E5ROZ2OY"
   }
 }
+
+resource "helm_release" "cert-manager" {
+  depends_on = [null_resource.wait_for_cluster_ready]
+  name       = "cert-manager"
+  chart      = "charts/cert-manager"
+  namespace  = kubernetes_namespace.cert-manager.metadata[0].name
+
+}
