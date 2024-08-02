@@ -3,6 +3,9 @@ resource "kubernetes_namespace" "webapp_producer" {
   depends_on = [null_resource.wait_for_cluster_ready]
   metadata {
     name = "webapp-producer"
+    labels = {
+      "istio-injection" = "enabled"
+    }
   }
 }
 
@@ -62,7 +65,9 @@ resource "kubernetes_namespace" "istio-ingress" {
   }
 }
 
-# resource "kubernetes_manifest" "metrics_server_deployment" {
-#   depends_on = [null_resource.wait_for_cluster_ready]
-#   manifest   = yamldecode(file("${path.module}/k8s/metrics_component.yaml"))
-# }
+resource "kubernetes_namespace" "external-dns" {
+  depends_on = [null_resource.wait_for_cluster_ready]
+  metadata {
+    name = "external-dns"
+  }
+}
