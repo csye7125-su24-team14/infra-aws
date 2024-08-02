@@ -155,7 +155,9 @@ module "eks" {
       iam_role_description     = "EKS managed node group role"
       iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy",
         "CloudWatchLogsReadOnlyAccess" = "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess",
-        "CloudWatchLogsCreateAcccess"  = aws_iam_policy.CloudWatchLogsCreateAcccess.arn
+        "CloudWatchLogsCreateAcccess"  = aws_iam_policy.CloudWatchLogsCreateAcccess.arn,
+        "AmazonEKSClusterPolicy"       = aws_iam_policy.ExternalDNSPolicy.arn,
+        "EksExternalDnsPolicy"         = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
       }
     }
   }
@@ -207,6 +209,36 @@ resource "aws_iam_policy" "CloudWatchLogsCreateAcccess" {
           "logs:PutDestination"
         ],
         "Resource" : "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "ExternalDNSPolicy" {
+  name        = "ExternalDNSPolicy"
+  description = "Allow external Dns operator to manage Route53"
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "route53:ChangeResourceRecordSets"
+        ],
+        "Resource" : [
+          "arn:aws:route53:::hostedzone/*"
+        ]
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "route53:ListHostedZones",
+          "route53:ListResourceRecordSets"
+        ],
+        "Resource" : [
+          "*"
+        ]
       }
     ]
   })

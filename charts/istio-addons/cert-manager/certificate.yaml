@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-gateway-certificate
+  namespace: istio-system
+spec:
+  secretName: istio-gateway-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  commonName: dev.anuragnandre.online
+  dnsNames:
+  - dev.anuragnandre.online

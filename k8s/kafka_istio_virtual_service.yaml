@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ .Values.KafkaRelease.Name }}-vs
+spec:
+  hosts:
+  - {{ .Values.KafkaRelease.Name }}-controller-0.{{ .Values.KafkaRelease.Name }}-controller-headless.{{ .Values.KafkaRelease.Namespace }}.svc.cluster.local
+  - {{ .Values.KafkaRelease.Name }}-controller-1.{{ .Values.KafkaRelease.Name }}-controller-headless.{{ .Values.KafkaRelease.Namespace }}.svc.cluster.local
+  - {{ .Values.KafkaRelease.Name }}-controller-2.{{ .Values.KafkaRelease.Name }}-controller-headless.{{ .Values.KafkaRelease.Namespace }}.svc.cluster.local
+  tcp:
+  - match:
+    - port: 9092  # to match the gateway port basically to bind this to gateway
+    route:
+    - destination:
+        host: {{ .Values.KafkaRelease.Name }}-controller-0.{{ .Values.KafkaRelease.Name }}-controller-headless.{{ .Values.KafkaRelease.Namespace }}.svc.cluster.local
+        port:
+          number: 9092
+    - destination:
+        host: {{ .Values.KafkaRelease.Name }}-controller-1.{{ .Values.KafkaRelease.Name }}-controller-headless.{{ .Values.KafkaRelease.Namespace }}.svc.cluster.local
+        port:
+          number: 9092
+    - destination:
+        host: {{ .Values.KafkaRelease.Name }}-controller-2.{{ .Values.KafkaRelease.Name }}-controller-headless.{{ .Values.KafkaRelease.Namespace }}.svc.cluster.local
+        port:
+          number: 9092

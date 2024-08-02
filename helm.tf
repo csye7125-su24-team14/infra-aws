@@ -1,9 +1,9 @@
 resource "helm_release" "kafka" {
   depends_on = [kubernetes_namespace.kafka]
   name       = "my-kafka"
-  repository = "oci://registry-1.docker.io/bitnamicharts"
-  chart      = "kafka"
+  chart      = "charts/kafka"
   namespace  = kubernetes_namespace.kafka.metadata[0].name
+
   set {
     name  = "sasl.client.users[0]"
     value = var.kafka_username
@@ -16,6 +16,25 @@ resource "helm_release" "kafka" {
     name  = "controller.resourcesPreset"
     value = "medium"
   }
+  set {
+    name  = "metrics.jmx.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "controller.enableIstioInjection"
+    value = "true"
+  }
+
+  # controller:
+  #   podAnnotations:
+  #     sidecar.istio.io/inject: "true"
+  #  set {
+  #   name  = "controller.podAnnotations"
+  #   value = jsonencode({
+  #     "sidecar.istio.io/inject" = "true"
+  #   })
+  # }
 }
 resource "helm_release" "postgres" {
   depends_on = [kubernetes_namespace.postgres]
@@ -110,9 +129,9 @@ locals {
   latest_cve_operator_version    = trimprefix(local.latest_cve_operator_release.tag_name, "v")
   latest_helm_fluent_bit_release = jsondecode(data.http.latest_helm_fluent_bit_release.response_body)
   latest_helm_fluent_bit_version = trimprefix(local.latest_helm_fluent_bit_release.tag_name, "v")
-  latest_helm_istiod_release     = jsondecode(data.http.latest_helm_fluent_bit_release.response_body)
+  latest_helm_istiod_release     = jsondecode(data.http.latest_helm_istiod_release.response_body)
   latest_helm_istiod_version     = trimprefix(local.latest_helm_istiod_release.tag_name, "v")
-  latest_helm_istio_base_release = jsondecode(data.http.latest_helm_fluent_bit_release.response_body)
+  latest_helm_istio_base_release = jsondecode(data.http.latest_helm_istio_base_release.response_body)
   latest_helm_istio_base_version = trimprefix(local.latest_helm_istio_base_release.tag_name, "v")
 }
 
@@ -189,8 +208,40 @@ resource "helm_release" "istio-base" {
 resource "helm_release" "istio-ingress" {
   depends_on = [kubernetes_namespace.istio-ingress]
   name       = "istio-ingress"
-  repository = "https://istio-release.storage.googleapis.com/charts"
-  chart      = "gateway"
+  chart      = "charts/gateway"
   namespace  = kubernetes_namespace.istio-ingress.metadata[0].name
 
+}
+
+resource "helm_release" "istio-addons" {
+  depends_on = [kubernetes_namespace.istio-system, helm_release.istiod]
+  name       = "istio-addons"
+  chart      = "charts/istio-addons"
+  namespace  = kubernetes_namespace.istio-system.metadata[0].name
+
+}
+
+resource "helm_release" "metrics-server" {
+  depends_on = [null_resource.wait_for_cluster_ready]
+  name       = "metrics-server"
+  chart      = "charts/metrics-server"
+  namespace  = "default"
+
+}
+
+resource "helm_release" "external-dns" {
+  depends_on = [kubernetes_namespace.external-dns]
+  name       = "external-dns"
+  repository = "oci://registry-1.docker.io/bitnamicharts"
+  chart      = "external-dns"
+  namespace  = kubernetes_namespace.external-dns.metadata[0].name
+  set {
+    name  = "domainFilters[0]"
+    value = "dev.anuragnandre.online"
+  }
+
+  set {
+    name  = "txtOwnerId"
+    value = "Z03371893NFK1E5ROZ2OY"
+  }
 }
