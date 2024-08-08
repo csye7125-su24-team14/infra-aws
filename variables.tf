@@ -97,3 +97,13 @@ variable "dockerconfigjson" {
   description = "Docker config"
   type        = string
 }
+
+variable "hostedZoneId" {
+  description = "Hosted Zone Id"
+  type        = string
+}
+
+variable "account_id" {
+  description = "Account Id"
+  type        = string
+}

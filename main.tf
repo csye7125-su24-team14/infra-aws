@@ -154,10 +154,9 @@ module "eks" {
       iam_role_use_name_prefix = false
       iam_role_description     = "EKS managed node group role"
       iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy",
-        "CloudWatchLogsReadOnlyAccess" = "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess",
-        "CloudWatchLogsCreateAcccess"  = aws_iam_policy.CloudWatchLogsCreateAcccess.arn,
         "AmazonEKSClusterPolicy"       = aws_iam_policy.ExternalDNSPolicy.arn,
-        "EksExternalDnsPolicy"         = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+        "EksExternalDnsPolicy"         = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+        "AmazonRoute53FullAccess"      = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
       }
     }
   }
@@ -179,9 +178,10 @@ module "eks" {
   depends_on = [module.vpc]
 }
 
+
 resource "aws_security_group" "eks_node_group_allow_istio_sg" {
-  name_prefix = "eks_node_group_allow_istio_sg" # Set the name prefix for the security group
-  vpc_id      = module.vpc.vpc_id               # Set the VPC ID for the security group
+  name_prefix = "eks_node_group_allow_istio_sg" 
+  vpc_id      = module.vpc.vpc_id               
   ingress {
     from_port   = 15017
     to_port     = 15017
@@ -209,6 +209,30 @@ resource "aws_iam_policy" "CloudWatchLogsCreateAcccess" {
           "logs:PutDestination"
         ],
         "Resource" : "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "CertManagerPolicy" {
+  name        = "CertManagerPolicy"
+  description = "Allow cert manager to manage Route53"
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : "route53:GetChange",
+        "Resource" : "arn:aws:route53:::change/*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "route53:ChangeResourceRecordSets",
+          "route53:ListResourceRecordSets"
+        ],
+        "Resource" : "arn:aws:route53:::hostedzone/${var.hostedZoneId}"
       }
     ]
   })
@@ -282,6 +306,51 @@ resource "aws_iam_role" "cluster_autoscaler" {
   })
 }
 
+
+# Create the IAM role for the Fluent Bit
+resource "aws_iam_role" "fluent-bit" {
+  name = "eks-fluent-bit"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${replace(data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer, "https://", "")}"
+        }
+        Condition = {
+          StringEquals = {
+            "${replace(data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer, "https://", "")}:sub" : "system:serviceaccount:${kubernetes_namespace.amazon-cloudwatch.metadata[0].name}:fluent-bit"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role" "cert_manager_role" {
+  name = "cert_manager_role"
+
+  depends_on = [ module.eks ]
+
+  assume_role_policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Effect" : "Allow",
+          "Principal" : {
+            "AWS" : "arn:aws:iam::${var.account_id}:role/AmazonEksNodeRole"
+            # arn:aws:iam::533267416279:role/AmazonEksNodeRole
+          },
+          "Action" : "sts:AssumeRole"
+        }
+      ]
+  })
+}
+
 # Create the IAM policy for the Cluster Autoscaler
 resource "aws_iam_policy" "cluster_autoscaler" {
   name        = "eks-cluster-autoscaler-policy"
@@ -312,6 +381,22 @@ resource "aws_iam_policy" "cluster_autoscaler" {
 resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
   policy_arn = aws_iam_policy.cluster_autoscaler.arn
   role       = aws_iam_role.cluster_autoscaler.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_fluent_bit_cloudwatch_create_logs" {
+  policy_arn = aws_iam_policy.CloudWatchLogsCreateAcccess.arn
+  role       = aws_iam_role.fluent-bit.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_fluent_bit_cloudwatch_read_logs" {
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess"
+  role       = aws_iam_role.fluent-bit.name
+}
+
+
+resource "aws_iam_role_policy_attachment" "cert_manager_policy" {
+  policy_arn = aws_iam_policy.CertManagerPolicy.arn
+  role       = aws_iam_role.cert_manager_role.name
 }
 
 # Data source to get the EKS cluster details
