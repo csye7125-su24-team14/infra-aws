@@ -228,10 +228,10 @@ resource "helm_release" "istio-base" {
 }
 
 resource "helm_release" "istio-ingress" {
-  depends_on = [kubernetes_namespace.istio-ingress]
+  depends_on = [kubernetes_namespace.istio-system, helm_release.istiod]
   name       = "istio-ingress"
   chart      = "charts/gateway"
-  namespace  = kubernetes_namespace.istio-ingress.metadata[0].name
+  namespace  = kubernetes_namespace.istio-system.metadata[0].name
 
   # values = [
   #   <<-EOT
