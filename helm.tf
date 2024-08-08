@@ -187,16 +187,16 @@ resource "helm_release" "fluent-bit" {
   chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-fluent-bit/archive/refs/tags/v${local.latest_helm_fluent_bit_version}.tar.gz"
   namespace  = kubernetes_namespace.amazon-cloudwatch.metadata[0].name
 
-#  values = [
-#     <<-EOT
-#     serviceAccount:
-#       create: true
-#       automount: true
-#       annotations: {${aws_iam_role.fluent-bit.arn}}
-#       name: "fluent-bit"
-#     EOT
-#   ]
- set {
+  #  values = [
+  #     <<-EOT
+  #     serviceAccount:
+  #       create: true
+  #       automount: true
+  #       annotations: {${aws_iam_role.fluent-bit.arn}}
+  #       name: "fluent-bit"
+  #     EOT
+  #   ]
+  set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = aws_iam_role.fluent-bit.arn
   }
@@ -213,7 +213,7 @@ resource "helm_release" "istiod" {
   chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-istio-istiod/archive/refs/tags/v${local.latest_helm_istiod_version}.tar.gz"
   namespace  = kubernetes_namespace.istio-system.metadata[0].name
 
-   set {
+  set {
     name  = "global.logAsJson"
     value = "true"
   }

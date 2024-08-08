@@ -154,9 +154,9 @@ module "eks" {
       iam_role_use_name_prefix = false
       iam_role_description     = "EKS managed node group role"
       iam_role_additional_policies = { "AmazonEBSCSIDriverPolicy" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy",
-        "AmazonEKSClusterPolicy"       = aws_iam_policy.ExternalDNSPolicy.arn,
-        "EksExternalDnsPolicy"         = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
-        "AmazonRoute53FullAccess"      = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
+        "AmazonEKSClusterPolicy"  = aws_iam_policy.ExternalDNSPolicy.arn,
+        "EksExternalDnsPolicy"    = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+        "AmazonRoute53FullAccess" = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
       }
     }
   }
@@ -180,8 +180,8 @@ module "eks" {
 
 
 resource "aws_security_group" "eks_node_group_allow_istio_sg" {
-  name_prefix = "eks_node_group_allow_istio_sg" 
-  vpc_id      = module.vpc.vpc_id               
+  name_prefix = "eks_node_group_allow_istio_sg"
+  vpc_id      = module.vpc.vpc_id
   ingress {
     from_port   = 15017
     to_port     = 15017
@@ -333,7 +333,7 @@ resource "aws_iam_role" "fluent-bit" {
 resource "aws_iam_role" "cert_manager_role" {
   name = "cert_manager_role"
 
-  depends_on = [ module.eks ]
+  depends_on = [module.eks]
 
   assume_role_policy = jsonencode(
     {
