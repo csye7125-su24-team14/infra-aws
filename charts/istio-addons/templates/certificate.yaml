@@ -8,6 +8,5 @@ spec:
   issuerRef:
     name: letsencrypt-staging
     kind: ClusterIssuer
-  commonName: dev.anuragnandre.online
   dnsNames:
-  - dev.anuragnandre.online
+  - "dev.anuragnandre.online"

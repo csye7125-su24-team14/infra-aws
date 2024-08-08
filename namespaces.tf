@@ -65,16 +65,16 @@ resource "kubernetes_namespace" "istio-ingress" {
   }
 }
 
-resource "kubernetes_namespace" "external-dns" {
-  depends_on = [null_resource.wait_for_cluster_ready]
-  metadata {
-    name = "external-dns"
-  }
-}
+# resource "kubernetes_namespace" "external-dns" {
+#   depends_on = [null_resource.wait_for_cluster_ready]
+#   metadata {
+#     name = "external-dns"
+#   }
+# }
 
-resource "kubernetes_namespace" "cert-manager" {
-  depends_on = [null_resource.wait_for_cluster_ready]
-  metadata {
-    name = "cert-manager"
-  }
-}
+# resource "kubernetes_namespace" "cert-manager" {
+#   depends_on = [null_resource.wait_for_cluster_ready]
+#   metadata {
+#     name = "cert-manager"
+#   }
+# }
