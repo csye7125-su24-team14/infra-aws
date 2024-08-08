@@ -71,3 +71,10 @@ resource "kubernetes_namespace" "external-dns" {
     name = "external-dns"
   }
 }
+
+resource "kubernetes_namespace" "cert-manager" {
+  depends_on = [null_resource.wait_for_cluster_ready]
+  metadata {
+    name = "cert-manager"
+  }
+}

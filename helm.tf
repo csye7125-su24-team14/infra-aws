@@ -187,6 +187,23 @@ resource "helm_release" "fluent-bit" {
   chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-fluent-bit/archive/refs/tags/v${local.latest_helm_fluent_bit_version}.tar.gz"
   namespace  = kubernetes_namespace.amazon-cloudwatch.metadata[0].name
 
+#  values = [
+#     <<-EOT
+#     serviceAccount:
+#       create: true
+#       automount: true
+#       annotations: {${aws_iam_role.fluent-bit.arn}}
+#       name: "fluent-bit"
+#     EOT
+#   ]
+ set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.fluent-bit.arn
+  }
+  set {
+    name  = "serviceAccount.name"
+    value = "fluent-bit"
+  }
 }
 
 
@@ -195,6 +212,11 @@ resource "helm_release" "istiod" {
   name       = "istiod"
   chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-istio-istiod/archive/refs/tags/v${local.latest_helm_istiod_version}.tar.gz"
   namespace  = kubernetes_namespace.istio-system.metadata[0].name
+
+   set {
+    name  = "global.logAsJson"
+    value = "true"
+  }
 
 }
 resource "helm_release" "istio-base" {
@@ -211,7 +233,56 @@ resource "helm_release" "istio-ingress" {
   chart      = "charts/gateway"
   namespace  = kubernetes_namespace.istio-ingress.metadata[0].name
 
+  # values = [
+  #   <<-EOT
+  #   service:
+  #     annotations:
+  #       service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  #       service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  #       external-dns.alpha.kubernetes.io/hostname: "grafana.dev.skynetx.me"
+  #     ports:
+  #       - port: 80
+  #         targetPort: 8080
+  #         name: http2
+  #       - port: 443
+  #         targetPort: 8443
+  #         name: https
+  #       - port: 15021
+  #         targetPort: 15021
+  #         name: status-port
+  #     type: LoadBalancer
+  #   EOT
+  # ]
+
 }
+
+# resource "helm_release" "istio_ingress" {
+#   name       = "istio-ingress"
+#   chart      = "./charts/gateway"
+#   namespace  = kubernetes_namespace.istio-system.metadata[0].name
+#   depends_on = [helm_release.istiod]
+
+#   values = [
+#     <<-EOT
+#     service:
+#       annotations:
+#         service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+#         service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+#         external-dns.alpha.kubernetes.io/hostname: "dev.anuragnandre.online"
+#       ports:
+#         - port: 80
+#           targetPort: 8080
+#           name: http2
+#         - port: 443
+#           targetPort: 8443
+#           name: https
+#         - port: 15021
+#           targetPort: 15021
+#           name: status-port
+#       type: LoadBalancer
+#     EOT
+#   ]
+# }
 
 resource "helm_release" "istio-addons" {
   depends_on = [kubernetes_namespace.istio-system, helm_release.istiod]
@@ -229,19 +300,27 @@ resource "helm_release" "metrics-server" {
 
 }
 
-resource "helm_release" "external-dns" {
-  depends_on = [kubernetes_namespace.external-dns]
-  name       = "external-dns"
-  repository = "oci://registry-1.docker.io/bitnamicharts"
-  chart      = "external-dns"
-  namespace  = kubernetes_namespace.external-dns.metadata[0].name
-  set {
-    name  = "domainFilters[0]"
-    value = "dev.anuragnandre.online"
-  }
+# resource "helm_release" "external-dns" {
+#   depends_on = [kubernetes_namespace.external-dns]
+#   name       = "external-dns"
+#   repository = "oci://registry-1.docker.io/bitnamicharts"
+#   chart      = "external-dns"
+#   namespace  = kubernetes_namespace.external-dns.metadata[0].name
+#   set {
+#     name  = "domainFilters[0]"
+#     value = "dev.anuragnandre.online"
+#   }
 
-  set {
-    name  = "txtOwnerId"
-    value = "Z03371893NFK1E5ROZ2OY"
-  }
-}
+#   set {
+#     name  = "txtOwnerId"
+#     value = var.hostedZoneId
+#   }
+# }
+
+# resource "helm_release" "cert-manager" {
+#   depends_on = [kubernetes_namespace.cert-manager]
+#   name       = "cert-manager"
+#   chart      = "charts/cert-manager"
+#   namespace  = kubernetes_namespace.cert-manager.metadata[0].name
+
+# }
