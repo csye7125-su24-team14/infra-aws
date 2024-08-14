@@ -124,7 +124,7 @@ module "eks" {
       subnet_ids = module.vpc.public_subnet_ids
 
       min_size       = 3
-      max_size       = 6
+      max_size       = 7
       desired_size   = 3
       capacity_type  = "ON_DEMAND"
       instance_types = ["c3.large"] #c3.large

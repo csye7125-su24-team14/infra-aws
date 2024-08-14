@@ -233,56 +233,7 @@ resource "helm_release" "istio-ingress" {
   chart      = "charts/gateway"
   namespace  = kubernetes_namespace.istio-system.metadata[0].name
 
-  # values = [
-  #   <<-EOT
-  #   service:
-  #     annotations:
-  #       service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-  #       service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-  #       external-dns.alpha.kubernetes.io/hostname: "grafana.dev.skynetx.me"
-  #     ports:
-  #       - port: 80
-  #         targetPort: 8080
-  #         name: http2
-  #       - port: 443
-  #         targetPort: 8443
-  #         name: https
-  #       - port: 15021
-  #         targetPort: 15021
-  #         name: status-port
-  #     type: LoadBalancer
-  #   EOT
-  # ]
-
 }
-
-# resource "helm_release" "istio_ingress" {
-#   name       = "istio-ingress"
-#   chart      = "./charts/gateway"
-#   namespace  = kubernetes_namespace.istio-system.metadata[0].name
-#   depends_on = [helm_release.istiod]
-
-#   values = [
-#     <<-EOT
-#     service:
-#       annotations:
-#         service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-#         service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-#         external-dns.alpha.kubernetes.io/hostname: "dev.anuragnandre.online"
-#       ports:
-#         - port: 80
-#           targetPort: 8080
-#           name: http2
-#         - port: 443
-#           targetPort: 8443
-#           name: https
-#         - port: 15021
-#           targetPort: 15021
-#           name: status-port
-#       type: LoadBalancer
-#     EOT
-#   ]
-# }
 
 resource "helm_release" "istio-addons" {
   depends_on = [kubernetes_namespace.istio-system, helm_release.istiod]
@@ -324,3 +275,12 @@ resource "helm_release" "metrics-server" {
 #   namespace  = kubernetes_namespace.cert-manager.metadata[0].name
 
 # }
+
+resource "helm_release" "tempo" {
+  depends_on = [kubernetes_namespace.istio-system]
+  name       = "tempo"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "tempo"
+  namespace  = kubernetes_namespace.istio-system.metadata[0].name
+  values     = [file("values/tempo.yaml")]
+}
