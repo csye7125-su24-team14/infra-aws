@@ -37,6 +37,16 @@ resource "kubernetes_namespace" "kafka" {
   }
 }
 
+resource "kubernetes_namespace" "cve_rag" {
+  depends_on = [null_resource.wait_for_cluster_ready]
+  metadata {
+    name = "cve-rag"
+    labels = {
+      "istio-injection" = "enabled"
+    }
+  }
+}
+
 resource "kubernetes_namespace" "autoscaler" {
   depends_on = [null_resource.wait_for_cluster_ready]
   metadata {
