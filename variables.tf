@@ -107,3 +107,18 @@ variable "account_id" {
   description = "Account Id"
   type        = string
 }
+
+variable "PINECONE_HOST" {
+  description = "Pinecone Host"
+  type        = string
+}
+
+variable "PINECONE_API_KEY" {
+  description = "Pinecone API Key"
+  type        = string
+}
+
+variable "GROQ_API_KEY" {
+  description = "GROQ API"
+  type        = string
+}

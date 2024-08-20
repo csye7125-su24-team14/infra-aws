@@ -120,6 +120,13 @@ data "http" "latest_helm_istio_base_release" {
     Authorization = "token ${var.github_token}"
   }
 }
+data "http" "latest_helm_cve_rag_release" {
+  url = "https://api.github.com/repos/${var.github_orgname}/helm-cve-intelligence-rag/releases/latest"
+  request_headers = {
+    Accept        = "application/vnd.github.v3+json"
+    Authorization = "token ${var.github_token}"
+  }
+}
 locals {
   latest_autoscaler_release      = jsondecode(data.http.latest_autoscaler_release.response_body)
   latest_autoscaler_version      = trimprefix(local.latest_autoscaler_release.tag_name, "v")
@@ -133,6 +140,8 @@ locals {
   latest_helm_istiod_version     = trimprefix(local.latest_helm_istiod_release.tag_name, "v")
   latest_helm_istio_base_release = jsondecode(data.http.latest_helm_istio_base_release.response_body)
   latest_helm_istio_base_version = trimprefix(local.latest_helm_istio_base_release.tag_name, "v")
+  latest_helm_cve_rag_release    = jsondecode(data.http.latest_helm_cve_rag_release.response_body)
+  latest_helm_cve_rag_version    = trimprefix(local.latest_helm_cve_rag_release.tag_name, "v")
 }
 
 resource "helm_release" "autoscaler" {
@@ -250,32 +259,6 @@ resource "helm_release" "metrics-server" {
   namespace  = "default"
 
 }
-
-# resource "helm_release" "external-dns" {
-#   depends_on = [kubernetes_namespace.external-dns]
-#   name       = "external-dns"
-#   repository = "oci://registry-1.docker.io/bitnamicharts"
-#   chart      = "external-dns"
-#   namespace  = kubernetes_namespace.external-dns.metadata[0].name
-#   set {
-#     name  = "domainFilters[0]"
-#     value = "dev.anuragnandre.online"
-#   }
-
-#   set {
-#     name  = "txtOwnerId"
-#     value = var.hostedZoneId
-#   }
-# }
-
-# resource "helm_release" "cert-manager" {
-#   depends_on = [kubernetes_namespace.cert-manager]
-#   name       = "cert-manager"
-#   chart      = "charts/cert-manager"
-#   namespace  = kubernetes_namespace.cert-manager.metadata[0].name
-
-# }
-
 resource "helm_release" "tempo" {
   depends_on = [kubernetes_namespace.istio-system]
   name       = "tempo"
@@ -283,4 +266,57 @@ resource "helm_release" "tempo" {
   chart      = "tempo"
   namespace  = kubernetes_namespace.istio-system.metadata[0].name
   values     = [file("values/tempo.yaml")]
+}
+
+resource "helm_release" "cve-rag" {
+  depends_on = [kubernetes_namespace.cve_rag]
+  name       = "cve-rag"
+  chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-cve-intelligence-rag/archive/refs/tags/v${local.latest_helm_cve_rag_version}.tar.gz"
+  namespace  = kubernetes_namespace.cve_rag.metadata[0].name
+
+  set {
+    name  = "GROQ_API_KEY"
+    value = "${var.GROQ_API_KEY}"
+  }
+  set {
+    name  = "PINECONE_API_KEY"
+    value = "${var.PINECONE_API_KEY}"
+  }
+  set {
+    name  = "PINECONE_HOST"
+    value = "${var.PINECONE_HOST}"
+  }
+
+  set{
+    name = "OLTP_ENDPOINT"
+    value = "tempo.istio-system.svc.cluster.local:4317"
+  }
+}
+
+resource "helm_release" "cve-rag-light" {
+  depends_on = [kubernetes_namespace.cve_rag]
+  name       = "cve-rag-light"
+  chart      = "https://x-access-token:${var.github_token}@github.com/${var.github_orgname}/helm-cve-intelligence-rag/archive/refs/tags/v${local.latest_helm_cve_rag_version}.tar.gz"
+  namespace  = kubernetes_namespace.cve_rag.metadata[0].name
+
+  set {
+    name  = "GROQ_API_KEY"
+    value = "${var.GROQ_API_KEY}"
+  }
+  set {
+    name  = "PINECONE_API_KEY"
+    value = "${var.PINECONE_API_KEY}"
+  }
+  set {
+    name  = "PINECONE_HOST"
+    value = "${var.PINECONE_HOST}"
+  }
+  set {
+    name  = "image.tag"
+    value = "v1.3.0"
+  }
+  set{
+    name = "OLTP_ENDPOINT"
+    value = "tempo.istio-system.svc.cluster.local:4317"
+  }
 }
